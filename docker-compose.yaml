@@ -1,0 +1,27 @@
+version: "3.7"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+    volumes:
+      - ./src:/home/node/app/src
+    container_name: saj2mqtt
+    environment:
+      - PORT=4000
+      - SAJ_INVERTER_IP = 192.168.1.150
+      - POLLING_INTERVAL = 8000
+
+      - MQTT_BROKER_IP = 192.168.1.129
+      - MQTT_BROKER_PORT = 1883
+      - MQTT_BROKER_USER = admin
+      - MQTT_BROKER_PWD = password
+
+      - MQTT_SAJ2MQTT_TOPIC = saj2mqtt/state
+    expose:
+      - "4000"
+    ports:
+      - "4000:4000"
+    command: npm run start
