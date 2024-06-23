@@ -1,50 +1,53 @@
 import axios from "axios";
-import mqtt from "mqtt";
 
 import {
-  MQTT_BROKER_IP,
-  MQTT_BROKER_PORT,
-  MQTT_BROKER_PWD,
-  MQTT_BROKER_USER,
   MQTT_SAJ2MQTT_TOPIC,
   POLLING_INTERVAL,
   SAJ_INVERTER_IP,
 } from "./config";
 import { getSAJInverterState } from "./formatter";
+import { mqttClient } from "./mqtt";
 
-const mqttClient = mqtt.connect(
-  `mqtt://${MQTT_BROKER_IP}:${MQTT_BROKER_PORT}`,
-  { username: MQTT_BROKER_USER, password: MQTT_BROKER_PWD }
-);
+const instance = axios.create();
 
-mqttClient.on("connect", () =>
-  console.log(`Connected to: mqtt://${MQTT_BROKER_IP}:${MQTT_BROKER_PORT}`)
-);
-
-mqttClient.on("error", (err) => console.error(err));
+instance.interceptors.request.use((config) => {
+  config.headers["request-startTime"] = new Date().getTime();
+  return config;
+});
 
 async function SAJ2MQTT() {
   try {
-    const { data } = await axios.get(
-      `http://${SAJ_INVERTER_IP}/status/status.php`
+    if (!SAJ_INVERTER_IP) {
+      throw new Error("No SAJ_INVERTER_IP found");
+    }
+
+    const res = await instance.get<string>(
+      `http://${SAJ_INVERTER_IP}/status/status.php`,
     );
 
-    if (!data) return;
+    if (!res.data) return;
 
-    const SAJ_JSON = getSAJInverterState(data);
+    const SAJ_JSON = getSAJInverterState(res.data);
 
-    if (!Object.keys(SAJ_JSON).length) return;
+    if (!Object.keys(SAJ_JSON).length) {
+      throw new Error("No data found");
+    }
 
-    const date = new Date();
-    mqttClient.publish(MQTT_SAJ2MQTT_TOPIC, JSON.stringify(SAJ_JSON));
+    const currentData = { status: "Online", ...SAJ_JSON };
 
-    console.info(
-      `${MQTT_SAJ2MQTT_TOPIC}   |   ${date.toISOString()} - ${JSON.stringify(
-        SAJ_JSON
-      )} \n *****`
-    );
+    mqttClient.publish(MQTT_SAJ2MQTT_TOPIC, JSON.stringify(currentData));
+
+    const date = new Date(Number(res.config.headers["request-startTime"]));
+
+    console.info(`${MQTT_SAJ2MQTT_TOPIC}  | ${date}`);
+    console.log(currentData);
+    console.log("----------------");
   } catch (err) {
-    console.error(err);
+    mqttClient.publish(
+      MQTT_SAJ2MQTT_TOPIC,
+      JSON.stringify({ status: "Offline", grid_connected_power: "0" }),
+    );
+    console.error("Error", err);
   }
 }
 
