@@ -43,11 +43,10 @@ async function SAJ2MQTT() {
     console.log(currentData);
     console.log("----------------");
   } catch (err) {
-    mqttClient.publish(
-      MQTT_SAJ2MQTT_TOPIC,
-      JSON.stringify({ status: "Offline", grid_connected_power: "0" }),
-    );
-    console.error("Error", err);
+    const currentData = { status: "Offline", grid_connected_power: "0" };
+    mqttClient.publish(MQTT_SAJ2MQTT_TOPIC, JSON.stringify(currentData));
+    console.error("Something went wrong!!", err);
+    console.log("----------------");
   }
 }
 
