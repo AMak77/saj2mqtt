@@ -11,6 +11,6 @@ RUN ls -a
 RUN npm install
 RUN npm run build
 
-EXPOSE 4000
+EXPOSE 4001
 
 CMD [ "node", "./dist/index.js" ]
