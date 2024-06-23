@@ -1,4 +1,4 @@
-import { SAJField } from "../@types/SAJField";
+import { SAJField } from "../types";
 
 export const SAJUnits: Record<SAJField, string> = {
   [SAJField.TOTAL_GENERATED]: "kWh",

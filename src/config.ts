@@ -5,6 +5,10 @@ dotenv.config();
 const env = process.env;
 
 export const SAJ_INVERTER_IP = env.SAJ_INVERTER_IP || "localhost";
+
+export const SAJ_STATUS_URL =
+  env.SAJ_INVERTER_URL || `http://${SAJ_INVERTER_IP}/status/status.php`;
+
 export const POLLING_INTERVAL = Number(env.POLLING_INTERVAL) || 8000;
 
 export const MQTT_BROKER_IP = env.MQTT_BROKER_IP;

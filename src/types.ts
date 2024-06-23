@@ -19,3 +19,5 @@ export enum SAJField {
   DEVICE_TEMPERATURE = "device_temperature",
   CO2_EMISSION_REDUCTION = "CO2emission_reduction",
 }
+
+export type SAJState = Partial<Record<SAJField | "status" | "date", string>>;

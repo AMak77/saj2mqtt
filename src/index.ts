@@ -1,53 +1,23 @@
-import axios from "axios";
-
 import {
   MQTT_SAJ2MQTT_TOPIC,
   POLLING_INTERVAL,
-  SAJ_INVERTER_IP,
+  SAJ_STATUS_URL,
 } from "./config";
-import { getSAJInverterState } from "./formatter";
 import { mqttClient } from "./mqtt";
-
-const instance = axios.create();
-
-instance.interceptors.request.use((config) => {
-  config.headers["request-startTime"] = new Date().getTime();
-  return config;
-});
+import { getCurrentState } from "./state";
 
 async function SAJ2MQTT() {
-  try {
-    if (!SAJ_INVERTER_IP) {
-      throw new Error("No SAJ_INVERTER_IP found");
-    }
-
-    const res = await instance.get<string>(
-      `http://${SAJ_INVERTER_IP}/status/status.php`,
-    );
-
-    if (!res.data) return;
-
-    const SAJ_JSON = getSAJInverterState(res.data);
-
-    if (!Object.keys(SAJ_JSON).length) {
-      throw new Error("No data found");
-    }
-
-    const currentData = { status: "Online", ...SAJ_JSON };
-
-    mqttClient.publish(MQTT_SAJ2MQTT_TOPIC, JSON.stringify(currentData));
-
-    const date = new Date(Number(res.config.headers["request-startTime"]));
-
-    console.info(`${MQTT_SAJ2MQTT_TOPIC}  | ${date}`);
-    console.log(currentData);
-    console.log("----------------");
-  } catch (err) {
-    const currentData = { status: "Offline", grid_connected_power: "0" };
-    mqttClient.publish(MQTT_SAJ2MQTT_TOPIC, JSON.stringify(currentData));
-    console.error("Something went wrong!!", err);
-    console.log("----------------");
+  if (!SAJ_STATUS_URL) {
+    throw new Error("No SAJ status url found");
   }
+
+  const state = await getCurrentState();
+
+  console.log(state);
+
+  mqttClient.publish(MQTT_SAJ2MQTT_TOPIC, JSON.stringify(state));
+
+  setTimeout(SAJ2MQTT, POLLING_INTERVAL);
 }
 
-setInterval(SAJ2MQTT, POLLING_INTERVAL);
+SAJ2MQTT();
